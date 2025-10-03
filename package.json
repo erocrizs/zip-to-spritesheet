@@ -1,0 +1,15 @@
+{
+  "name": "zip-to-spritesheet",
+  "version": "1.0.0",
+  "description": "zip file full of png into a spritesheet",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server . -p 4000 -o",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

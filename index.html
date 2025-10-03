@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZIP to Spritesheet Converter</title>
+</head>
+<body>
+    <h1>ZIP to Spritesheet Converter</h1>
+    <p>Upload a ZIP file containing PNG images to create a spritesheet with 5-cell width grid format.</p>
+    
+    <input type="file" id="zipFileInput" accept=".zip" />
+    <br><br>
+    
+    <canvas id="spritesheetCanvas" style="border: 1px solid #ccc; display: none;"></canvas>
+    <br>
+    
+    <button id="downloadBtn" style="display: none;">Download Spritesheet</button>
+    
+    <div id="status"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        const zipFileInput = document.getElementById('zipFileInput');
+        const canvas = document.getElementById('spritesheetCanvas');
+        const ctx = canvas.getContext('2d');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const status = document.getElementById('status');
+
+        zipFileInput.addEventListener('change', handleZipFile);
+
+        async function handleZipFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            status.textContent = 'Processing ZIP file...';
+            
+            try {
+                const zip = await JSZip.loadAsync(file);
+                const pngFiles = [];
+                
+                // Extract PNG files from ZIP
+                for (const [filename, zipEntry] of Object.entries(zip.files)) {
+                    if (filename.toLowerCase().endsWith('.png') && !zipEntry.dir) {
+                        const blob = await zipEntry.async('blob');
+                        const image = await createImageFromBlob(blob);
+                        pngFiles.push({ filename, image });
+                    }
+                }
+
+                if (pngFiles.length === 0) {
+                    status.textContent = 'No PNG files found in the ZIP.';
+                    return;
+                }
+
+                status.textContent = `Found ${pngFiles.length} PNG files. Creating spritesheet...`;
+                
+                // Create spritesheet
+                createSpritesheet(pngFiles);
+                
+            } catch (error) {
+                status.textContent = 'Error processing ZIP file: ' + error.message;
+                console.error(error);
+            }
+        }
+
+        function createImageFromBlob(blob) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = URL.createObjectURL(blob);
+            });
+        }
+
+        function createSpritesheet(pngFiles) {
+            if (pngFiles.length === 0) return;
+
+            // Assume all images have the same dimensions (as specified)
+            const firstImage = pngFiles[0].image;
+            const cellWidth = firstImage.width;
+            const cellHeight = firstImage.height;
+            
+            // Calculate grid dimensions (5 cells wide)
+            const gridWidth = 5;
+            const gridHeight = Math.ceil(pngFiles.length / gridWidth);
+            
+            // Set canvas dimensions
+            canvas.width = cellWidth * gridWidth;
+            canvas.height = cellHeight * gridHeight;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw images in grid
+            pngFiles.forEach((pngFile, index) => {
+                const x = (index % gridWidth) * cellWidth;
+                const y = Math.floor(index / gridWidth) * cellHeight;
+                
+                ctx.drawImage(pngFile.image, x, y, cellWidth, cellHeight);
+            });
+            
+            // Show canvas and download button
+            canvas.style.display = 'block';
+            downloadBtn.style.display = 'inline-block';
+            
+            status.textContent = `Spritesheet created! ${pngFiles.length} images arranged in ${gridWidth}x${gridHeight} grid.`;
+            
+            // Set up download functionality
+            downloadBtn.onclick = () => {
+                const link = document.createElement('a');
+                link.download = 'spritesheet.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            };
+        }
+    </script>
+</body>
+</html>
