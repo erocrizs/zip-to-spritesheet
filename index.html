@@ -26,6 +26,7 @@
         const ctx = canvas.getContext('2d');
         const downloadBtn = document.getElementById('downloadBtn');
         const status = document.getElementById('status');
+        let filename;
 
         zipFileInput.addEventListener('change', handleZipFile);
 
@@ -33,7 +34,8 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            status.textContent = 'Processing ZIP file...';
+            filename = file.name
+            status.textContent = 'Processing ZIP file... ' + filename;
             
             try {
                 const zip = await JSZip.loadAsync(file);
@@ -109,7 +111,7 @@
             // Set up download functionality
             downloadBtn.onclick = () => {
                 const link = document.createElement('a');
-                link.download = 'spritesheet.png';
+                link.download = `${filename.replace(/\.[^/.]+$/, "")}_sheet.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             };
